@@ -57,7 +57,10 @@ def test_boundary_shape_rules_reject_incompatible_shapes():
 
 
 def test_planned_kernel_contracts_have_explicit_units():
-    assert SUPPORTED_KERNELS == ()
+    assert [kernel.name for kernel in SUPPORTED_KERNELS] == [
+        "time.tai_jd_to_tt_jd",
+        "coordinates.icrs_to_altaz",
+    ]
     assert PLANNED_KERNELS
 
     for kernel in PLANNED_KERNELS:

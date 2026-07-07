@@ -48,11 +48,23 @@ PLANNED_KERNELS = (
         outputs=(BoundaryValue("tai_jd", "day"),),
     ),
     KernelSpec(
+        name="time.tai_jd_to_tt_jd",
+        inputs=(
+            BoundaryValue("jd1", "day"),
+            BoundaryValue("jd2", "day"),
+        ),
+        outputs=(
+            BoundaryValue("tt_jd1", "day"),
+            BoundaryValue("tt_jd2", "day"),
+        ),
+        supported=True,
+    ),
+    KernelSpec(
         name="coordinates.icrs_to_altaz",
         inputs=(
             BoundaryValue("ra", "radian"),
             BoundaryValue("dec", "radian"),
-            BoundaryValue("obstime", "Julian date day"),
+            BoundaryValue("obstime_tt_jd", "TT Julian date day"),
             BoundaryValue("longitude", "radian"),
             BoundaryValue("latitude", "radian"),
             BoundaryValue("height", "meter", optional=True),
@@ -61,6 +73,7 @@ PLANNED_KERNELS = (
             BoundaryValue("az", "radian"),
             BoundaryValue("alt", "radian"),
         ),
+        supported=True,
     ),
 )
 

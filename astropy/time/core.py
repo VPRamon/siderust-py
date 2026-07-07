@@ -779,6 +779,33 @@ class TimeBase(MaskableShapedLikeNDArray):
         """Time scale."""
         return self._time.scale
 
+    def _set_scale_siderust(self, scale):
+        """Try a Siderust-backed direct scale conversion."""
+
+        if (self.scale, scale) != ("tai", "tt") or self.masked:
+            return False
+
+        from astropy import _siderust
+
+        if not _siderust.should_use_siderust("time.tai_jd_to_tt_jd"):
+            return False
+
+        from astropy._siderust.kernels import tai_jd_to_tt_jd
+
+        jd1, jd2 = tai_jd_to_tt_jd(self._time.jd1, self._time.jd2)
+        jd1, jd2 = day_frac(jd1, jd2)
+
+        self._time = self.FORMATS[self.format](
+            jd1,
+            jd2,
+            scale,
+            self.precision,
+            self.in_subfmt,
+            self.out_subfmt,
+            from_jd=True,
+        )
+        return True
+
     def _set_scale(self, scale):
         """
         This is the key routine that actually does time scale conversions.
@@ -795,6 +822,9 @@ class TimeBase(MaskableShapedLikeNDArray):
             # If doing a transform involving UTC then check that the leap
             # seconds table is up to date.
             _check_leapsec()
+
+        if self._set_scale_siderust(scale):
+            return
 
         # Determine the chain of scale transformations to get from the current
         # scale to the new scale.  MULTI_HOPS contains a dict of all

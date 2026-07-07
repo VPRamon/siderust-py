@@ -13,8 +13,9 @@ from astropy._siderust import (
 
 def test_core_module_importable():
     assert core.version() == "0.0.0"
-    assert core.backend_name() == "siderust-py native extension skeleton"
-    assert core.is_skeleton() is True
+    assert core.backend_name() == "siderust-py native extension"
+    assert core.is_skeleton() is False
+    assert core.siderust_version() == "0.11.0"
 
 
 def test_backend_info_reports_native_extension():
@@ -23,9 +24,17 @@ def test_backend_info_reports_native_extension():
     assert is_available() is True
     assert info["available"] is True
     assert info["module"] == "astropy._siderust._core"
-    assert info["name"] == "siderust-py native extension skeleton"
+    assert info["name"] == "siderust-py native extension"
     assert info["version"] == "0.0.0"
-    assert info["skeleton"] is True
+    assert info["skeleton"] is False
+    assert info["dependencies"] == {
+        "siderust_version": "0.11.0",
+        "siderust_source": "crates.io",
+        "siderust_ffi_source": (
+            "Siderust/siderust.git:siderust-ffi, pinned when first FFI kernel lands"
+        ),
+        "siderust_ffi_abi_version": None,
+    }
 
 
 def test_backend_status_reports_mode_and_kernels():
@@ -34,9 +43,13 @@ def test_backend_status_reports_mode_and_kernels():
     assert info["mode"] == "auto"
     assert info["enabled"] is True
     assert info["extension_available"] is True
-    assert info["supported_kernels"] == []
+    assert info["supported_kernels"] == [
+        "time.tai_jd_to_tt_jd",
+        "coordinates.icrs_to_altaz",
+    ]
     assert info["planned_kernels"] == [
         "time.utc_jd_to_tai_jd",
+        "time.tai_jd_to_tt_jd",
         "coordinates.icrs_to_altaz",
     ]
 
@@ -47,7 +60,7 @@ def test_backend_can_be_disabled():
 
         assert info["mode"] == "off"
         assert info["enabled"] is False
-        assert should_use_siderust("time.utc_jd_to_tai_jd") is False
+        assert should_use_siderust("time.tai_jd_to_tt_jd") is False
 
 
 def test_backend_on_does_not_route_unsupported_kernels():

@@ -15,8 +15,11 @@ Current status
 ==============
 
 This repository is at the planning and integration-bootstrap stage. It is still
-primarily an Astropy fork. A minimal native-extension skeleton now exists under
-``astropy._siderust`` so later issues can add real Siderust-backed kernels.
+primarily an Astropy fork. A minimal native extension now exists under
+``astropy._siderust`` and pins the published ``siderust`` crate at ``0.11.0``.
+The first supported kernels route TAI split-Julian-date to TT split-Julian-date
+conversion and a limited ICRS-to-AltAz coordinate transform through the native
+extension when the Siderust backend is enabled.
 
 Compatibility policy
 ====================
@@ -90,13 +93,14 @@ The expected implementation path is incremental:
 Native extension development
 ============================
 
-The private native skeleton is exposed as ``astropy._siderust._core`` and is
+The private native extension is exposed as ``astropy._siderust._core`` and is
 built through ``setuptools-rust`` using the PyO3 crate in
-``crates/astropy-siderust``. This skeleton is intentionally small: it only
-proves that the repository can build, install, import, and call a native module
-from the Astropy package tree.
+``crates/astropy-siderust``. The extension is intentionally small: it proves
+that the repository can build, install, import, and call a native module from
+the Astropy package tree, and it exposes the first time-scale and coordinate
+kernels.
 
-Development builds that include this native skeleton require a Rust toolchain.
+Development builds that include this native extension require a Rust toolchain.
 The Python build dependency on ``setuptools-rust`` is declared in
 ``pyproject.toml``, so a normal editable install builds the extension:
 
@@ -104,7 +108,7 @@ The Python build dependency on ``setuptools-rust`` is declared in
 
     python -m pip install -e .
 
-After installation, the native skeleton can be inspected with:
+After installation, the native extension can be inspected with:
 
 .. code-block:: bash
 
@@ -121,10 +125,28 @@ Runtime backend selection is controlled by
 ``"off"``, and ``"on"``. Unsupported operations continue to use the existing
 Astropy implementation.
 
-The skeleton does not yet call the real Siderust library and no scientific
-kernels are registered as supported yet. The Python/Rust boundary contract is
-documented in ``docs/development/siderust_boundary.rst``. The future Siderust
-pinning and local override policy is documented in
+The currently supported time kernel is ``time.tai_jd_to_tt_jd``. It is used by
+``Time(..., scale="tai").tt`` for unmasked times when
+``astropy._siderust.conf.backend_mode`` is ``"auto"`` or ``"on"`` and the
+native extension is importable. The planned ``time.utc_jd_to_tai_jd`` kernel
+remains unsupported until Siderust exposes a public UTC/TAI leap-second
+conversion surface suitable for Astropy split Julian dates.
+
+The currently supported coordinate kernel is ``coordinates.icrs_to_altaz``. It
+is used for unit-spherical ICRS coordinates transformed to ``AltAz`` when
+``pressure`` is zero, ``obstime`` and ``location`` are present, no coordinate
+distance or differentials are attached, and the backend is ``"auto"`` or
+``"on"``. Unsupported coordinate cases continue through Astropy's existing
+ERFA-backed path. The first validation tests require agreement with current
+Astropy behavior within 30 arcseconds for this narrow no-refraction route; the
+tolerance must be tightened before presenting the transform as a high-precision
+replacement.
+
+The matching upstream FFI crate lives under ``siderust-ffi`` in
+``Siderust/siderust.git`` and will be pinned when the first FFI-backed kernel
+lands. The Python/Rust boundary contract is documented in
+``docs/development/siderust_boundary.rst``. The Siderust pinning and local
+override policy is documented in
 ``docs/development/siderust_dependency_strategy.rst``.
 
 Upstream Astropy attribution

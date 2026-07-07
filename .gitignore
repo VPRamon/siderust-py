@@ -6,6 +6,7 @@
 *.pyd
 *.dll
 __pycache__
+crates/astropy-siderust/target/*
 
 # Ignore .pyi files since those are all auto-generated, and there are no plans
 # to use them otherwise (as of 2025-08-31). Can be adjusted as needed.

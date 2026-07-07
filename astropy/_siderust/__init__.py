@@ -1,9 +1,8 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Private Siderust backend integration helpers.
 
-This package intentionally exposes only minimal diagnostics at this stage.  The
-native extension is a build skeleton; scientific kernels are introduced by later
-issues.
+This package exposes private diagnostics and dispatch helpers for native
+Siderust-backed kernels.
 """
 
 from __future__ import annotations
@@ -86,6 +85,7 @@ def backend_status() -> dict[str, Any]:
             "name": core.backend_name(),
             "version": core.version(),
             "skeleton": core.is_skeleton(),
+            "dependencies": core.dependency_info(),
         }
     )
     if mode == "off":

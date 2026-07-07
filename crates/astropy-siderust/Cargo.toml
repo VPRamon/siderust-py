@@ -10,3 +10,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = { version = ">=0.25,<0.28", features = ["extension-module"] }
+siderust = { version = "=0.11.0", default-features = false }
+# The in-repository Siderust FFI crate is currently unpublished at 0.11.0.
+# Python-facing kernels should consume that crate through a pinned git
+# dependency once the first real FFI-backed kernel is introduced.

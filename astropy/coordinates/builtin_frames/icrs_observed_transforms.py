@@ -4,6 +4,7 @@ Contains the transformation functions for getting to "observed" systems from ICR
 """
 
 import erfa
+import numpy as np
 
 from astropy import units as u
 from astropy.coordinates.baseframe import frame_transform_graph
@@ -22,6 +23,64 @@ from .icrs import ICRS
 from .utils import PIOVER2
 
 
+def _has_mask(value):
+    try:
+        masked = getattr(value, "masked", False)
+    except ValueError:
+        return False
+    return masked is not False
+
+
+def _try_siderust_icrs_to_altaz(icrs_coo, observed_frame, is_unitspherical):
+    if not is_unitspherical or not isinstance(observed_frame, AltAz):
+        return None
+
+    from astropy import _siderust
+
+    if not _siderust.should_use_siderust("coordinates.icrs_to_altaz"):
+        return None
+    if _has_mask(icrs_coo) or _has_mask(observed_frame):
+        return None
+    if getattr(icrs_coo.data, "differentials", None):
+        return None
+    if observed_frame.location is None or observed_frame.obstime is None:
+        return None
+
+    pressure = observed_frame.pressure.to_value(u.hPa)
+    if np.any(np.asarray(pressure) != 0.0):
+        return None
+
+    from astropy._siderust.kernels import icrs_to_altaz_unit_spherical
+
+    usrepr = icrs_coo.represent_as(UnitSphericalRepresentation)
+    location = observed_frame.location
+    ra = usrepr.lon.to_value(u.radian)
+    dec = usrepr.lat.to_value(u.radian)
+    obstime_tt_jd = observed_frame.obstime.tt.jd
+    longitude = location.lon.to_value(u.radian)
+    latitude = location.lat.to_value(u.radian)
+    height = location.height.to_value(u.m)
+
+    if any(
+        np.any(~np.isfinite(np.asarray(value, dtype=np.float64)))
+        for value in (ra, dec, obstime_tt_jd, longitude, latitude, height)
+    ):
+        return None
+
+    az, alt = icrs_to_altaz_unit_spherical(
+        ra,
+        dec,
+        obstime_tt_jd,
+        longitude,
+        latitude,
+        height,
+    )
+    obs_srepr = UnitSphericalRepresentation(
+        az << u.radian, alt << u.radian, copy=False
+    )
+    return observed_frame.realize_frame(obs_srepr)
+
+
 @frame_transform_graph.transform(FunctionTransformWithFiniteDifference, ICRS, AltAz)
 @frame_transform_graph.transform(FunctionTransformWithFiniteDifference, ICRS, HADec)
 def icrs_to_observed(icrs_coo, observed_frame):
@@ -30,6 +89,12 @@ def icrs_to_observed(icrs_coo, observed_frame):
         isinstance(icrs_coo.data, UnitSphericalRepresentation)
         or icrs_coo.cartesian.x.unit == u.one
     )
+    siderust_result = _try_siderust_icrs_to_altaz(
+        icrs_coo, observed_frame, is_unitspherical
+    )
+    if siderust_result is not None:
+        return siderust_result
+
     # first set up the astrometry context for ICRS<->observed
     astrom = erfa_astrom.get().apco(observed_frame)
 
