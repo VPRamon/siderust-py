@@ -1,141 +1,138 @@
-|Astropy Logo|
+siderust-py
+===========
 
-:Versions:   |Zenodo| |PyPI Status| |Supported Python Versions|
-:Status:     |Coverage Status| |Actions Status| |CircleCI Status| |Documentation Status|
-:Tools:      |Pre-Commit| |Ruff|
-:Community:  |pyOpenSci Peer-Reviewed|
+siderust-py is an experimental fork of Astropy intended to keep the familiar
+Astropy Python API while selectively delegating performance-sensitive numerical
+astronomy kernels to Siderust through native Python bindings.
 
-The Astropy Project is a community effort to develop a
-single core package for astronomy in Python and foster interoperability between
-packages used in the field. This repository contains the core library.
+The project goal is not to rewrite all of Astropy. The goal is to preserve the
+Astropy-facing user experience for APIs such as ``Time``, ``SkyCoord``,
+``EarthLocation``, and ``AltAz``, while making selected internal computation
+paths available through Siderust when they are scientifically validated and
+measurably beneficial.
 
-* `Website <https://astropy.org/>`_
-* `Documentation <https://docs.astropy.org/>`_
-* `Slack <https://astropy.slack.com/>`_
-* `Open Astronomy Discourse <https://community.openastronomy.org/c/astropy/8>`_
-* `Astropy users mailing list <https://mail.python.org/mailman/listinfo/astropy>`_
-* `Astropy developers mailing list <https://groups.google.com/g/astropy-dev>`_
+Current status
+==============
+
+This repository is at the planning and integration-bootstrap stage. It is still
+primarily an Astropy fork. Siderust-backed execution paths are not yet part of
+the public runtime behavior unless explicitly introduced by later changes.
+
+Compatibility policy
+====================
+
+siderust-py should remain compatible with Astropy's public Python API unless a
+compatibility difference is explicitly documented.
+
+The intended dispatch model is:
+
+* keep Astropy-compatible public objects and call patterns;
+* normalize selected numerical workloads into a low-overhead Python/Rust
+  boundary;
+* execute supported kernels through Siderust when the backend is enabled;
+* fall back to the existing Astropy implementation for unsupported operations;
+* report both numerical agreement and performance impact before enabling a new
+  accelerated path by default.
+
+Users should not need to pass Siderust-specific objects into standard Astropy
+APIs. Native kernels should receive simple numerical inputs such as arrays,
+scalars, and explicitly documented units at the internal boundary.
+
+Initial acceleration scope
+==========================
+
+The first development phase focuses on a narrow set of astronomy-computation
+surfaces where Siderust can plausibly provide value without destabilizing the
+full Astropy package:
+
+* ``astropy.time``: selected time-scale and Julian-date-style conversions;
+* ``astropy.coordinates``: selected high-value coordinate transforms, starting
+  with planning-oriented paths such as ICRS to AltAz if supported by Siderust;
+* scheduling-oriented workflows: batch target/time/location calculations where
+  Python object churn and repeated transformations can dominate runtime;
+* backend diagnostics: tools to determine whether Siderust is available,
+  enabled, and used for a given supported path;
+* correctness and performance evidence: parity tests and benchmarks that report
+  both runtime and numerical deltas.
+
+Initial non-goals
+=================
+
+The first iteration does not attempt to accelerate or replace all of Astropy.
+In particular, the following areas are outside the initial Siderust-backed
+scope unless a later ticket explicitly expands the plan:
+
+* FITS I/O;
+* WCS;
+* tables;
+* modeling and fitting;
+* visualization;
+* general file/network I/O;
+* broad replacement of ERFA/pyerfa-backed behavior before scientific parity is
+  demonstrated;
+* claims of universal speedup, especially for scalar or Python-object-heavy
+  workloads.
+
+Development direction
+=====================
+
+The expected implementation path is incremental:
+
+1. document the fork identity and compatibility policy;
+2. add a minimal native Siderust extension that can be imported from Python;
+3. define the Python/Rust kernel boundary using arrays and explicit units;
+4. add backend selection and diagnostics;
+5. route one time kernel and one coordinate kernel through Siderust;
+6. add parity tests against the existing Astropy behavior;
+7. add facade-level benchmarks using normal Astropy-style code;
+8. document supported accelerated paths and fallbacks.
+
+Upstream Astropy attribution
+============================
+
+This repository is derived from Astropy. Astropy is a community project that
+develops a core astronomy package for Python and promotes interoperability
+between astronomy packages.
+
+Useful upstream resources:
+
+* `Astropy website <https://astropy.org/>`_
+* `Astropy documentation <https://docs.astropy.org/>`_
+* `Astropy contribution guide <https://www.astropy.org/contribute.html>`_
+* `Astropy developer documentation <https://docs.astropy.org/en/latest/index_dev.html>`_
+* `Astropy AI Policy <https://github.com/astropy/astropy-project/blob/main/policies/ai-policy.md>`_
+
+License
+=======
+
+Astropy is licensed under a 3-clause BSD style license. This fork preserves the
+upstream license; see `LICENSE.rst <LICENSE.rst>`_ and the files under
+``licenses/``.
 
 Installation
 ============
 
-To install `astropy` from PyPI, use:
+This fork is not yet presented as a stable public replacement for Astropy. For
+normal Astropy usage, install upstream Astropy from PyPI:
 
 .. code-block:: bash
 
     pip install astropy
 
-For more detailed instructions, see the `install guide
-<https://docs.astropy.org/en/stable/install.html>`_ in the docs.
+For siderust-py development, clone this repository and use the development
+installation workflow described by the project once the native Siderust build
+skeleton is introduced.
 
 Contributing
 ============
 
-|User Stats|
+Contributions should follow the fork's compatibility policy above and preserve
+upstream Astropy attribution. For Siderust-specific work, prefer small pull
+requests tied to the planning tickets in this repository.
 
-The Astropy Project is made both by and for its users, so we welcome and
-encourage contributions of many kinds. Our goal is to keep this a positive,
-inclusive, successful, and growing community that abides by the
-`Astropy Community Code of Conduct
-<https://www.astropy.org/about.html#codeofconduct>`_.
+Security note
+=============
 
-For guidance on contributing to or submitting feedback for the Astropy Project,
-see the `contributions page <https://www.astropy.org/contribute.html>`_.
-For contributing code specifically, the developer docs have a
-`guide <https://docs.astropy.org/en/latest/index_dev.html>`_ with a quickstart.
-There's also a `summary of contribution guidelines <CONTRIBUTING.md>`_, and
-Astropy's `AI Policy <https://github.com/astropy/astropy-project/blob/main/policies/ai-policy.md>`_.
-
-Developing with Codespaces
-==========================
-
-GitHub Codespaces is a cloud development environment using Visual Studio Code
-in your browser. This is a convenient way to start developing Astropy, using
-our `dev container <.devcontainer/devcontainer.json>`_ configured
-with the required packages. For help, see the `GitHub Codespaces
-docs <https://docs.github.com/en/codespaces>`_.
-
-|Codespaces|
-
-Acknowledging and Citing
-========================
-See the `acknowledgement and citation guide
-<https://www.astropy.org/acknowledging.html>`_ and the `CITATION
-<https://github.com/astropy/astropy/blob/main/astropy/CITATION>`_ file.
-
-Supporting the Project
-======================
-
-|NumFOCUS| |Donate|
-
-The Astropy Project is sponsored by NumFOCUS, a 501(c)(3) nonprofit in the
-United States. You can donate to the project by using the link above, and this
-donation will support our mission to promote sustainable, high-level code base
-for the astronomy community, open code development, educational materials, and
-reproducible scientific research.
-
-License
-=======
-
-Astropy is licensed under a 3-clause BSD style license - see the
-`LICENSE.rst <LICENSE.rst>`_ file.
-
-
-.. |Astropy Logo| image:: https://github.com/astropy/repo_stats/blob/main/dashboard_template/astropy_banner_gray.svg
-    :target: https://www.astropy.org/
-    :alt: Astropy
-
-.. |User Stats| image:: https://github.com/astropy/repo_stats/blob/cache/cache/astropy_user_stats_light.png
-    :target: https://docs.astropy.org/en/latest/impact_health.html
-    :alt: Astropy User Statistics
-
-.. |Actions Status| image:: https://github.com/astropy/astropy/actions/workflows/ci_workflows.yml/badge.svg
-    :target: https://github.com/astropy/astropy/actions
-    :alt: Astropy's GitHub Actions CI Status
-
-.. |CircleCI Status| image::  https://img.shields.io/circleci/build/github/astropy/astropy/main?logo=circleci&label=CircleCI
-    :target: https://circleci.com/gh/astropy/astropy
-    :alt: Astropy's CircleCI Status
-
-.. |Coverage Status| image:: https://codecov.io/gh/astropy/astropy/branch/main/graph/badge.svg
-    :target: https://codecov.io/gh/astropy/astropy
-    :alt: Astropy's Coverage Status
-
-.. |PyPI Status| image:: https://img.shields.io/pypi/v/astropy.svg
-    :target: https://pypi.org/project/astropy
-    :alt: Astropy's PyPI Status
-
-.. |Supported Python Versions| image:: https://img.shields.io/pypi/pyversions/astropy
-    :target: https://pypi.org/project/astropy
-    :alt: Supported Python Versions of latest released astropy
-
-.. |Zenodo| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.4670728.svg
-    :target: https://doi.org/10.5281/zenodo.4670728
-    :alt: Zenodo DOI
-
-.. |Documentation Status| image:: https://img.shields.io/readthedocs/astropy/latest.svg?logo=read%20the%20docs&logoColor=white&label=Docs&version=stable
-    :target: https://docs.astropy.org/en/stable/?badge=stable
-    :alt: Documentation Status
-
-.. |Pre-Commit| image:: https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white
-    :target: https://github.com/pre-commit/pre-commit
-    :alt: pre-commit
-
-.. |Ruff| image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json
-    :target: https://github.com/astral-sh/ruff
-    :alt: Ruff
-
-.. |NumFOCUS| image:: https://img.shields.io/badge/powered%20by-NumFOCUS-orange.svg?style=flat&colorA=E1523D&colorB=007D8A
-    :target: https://numfocus.org
-    :alt: Powered by NumFOCUS
-
-.. |Donate| image:: https://img.shields.io/badge/Donate-to%20Astropy-brightgreen.svg
-    :target: https://numfocus.org/donate-to-astropy
-
-.. |Codespaces| image:: https://github.com/codespaces/badge.svg
-    :target: https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=2081289
-    :alt: Open in GitHub Codespaces
-
-.. |pyOpenSci Peer-Reviewed| image:: https://pyopensci.org/badges/peer-reviewed.svg
-    :target: https://github.com/pyOpenSci/software-review/issues/251
-    :alt: pyOpenSci Peer-Reviewed
+Do not accept code, patches, or build artifacts through ZIP files or opaque
+attachments in issues. Proposed changes should arrive through normal pull
+requests with source diffs, tests, and reviewable explanations.
