@@ -12,6 +12,15 @@ from setuptools.command.editable_wheel import editable_wheel
 from setuptools.command.install import install
 
 from extension_helpers import get_extensions
+from setuptools_rust import Binding, RustExtension
+
+rust_extensions = [
+    RustExtension(
+        "astropy._siderust._core",
+        "crates/astropy-siderust/Cargo.toml",
+        binding=Binding.PyO3,
+    )
+]
 
 ext_modules = get_extensions()
 
@@ -51,8 +60,10 @@ for ext in ext_modules:
 
 setup(
     ext_modules=ext_modules,
+    rust_extensions=rust_extensions,
     cmdclass={
         "install": InstallWithStubs,
         "editable_wheel": EditableInstallWithStubs,
     },
+    zip_safe=False,
 )
