@@ -110,13 +110,22 @@ After installation, the native skeleton can be inspected with:
 
     python -c "import astropy._siderust._core as core; print(core.version())"
     python -c "from astropy._siderust import backend_info; print(backend_info())"
+    python -c "from astropy._siderust import backend_status; print(backend_status())"
 
 The top-level ``astropy`` import does not import the private native module
 eagerly. The ``astropy._siderust`` helpers load ``astropy._siderust._core`` only
 when diagnostics are requested.
 
-The skeleton does not yet call the real Siderust library. That dependency and
-the first scientific kernels are intentionally left to later tickets.
+Runtime backend selection is controlled by
+``astropy._siderust.conf.backend_mode``. The accepted values are ``"auto"``,
+``"off"``, and ``"on"``. Unsupported operations continue to use the existing
+Astropy implementation.
+
+The skeleton does not yet call the real Siderust library and no scientific
+kernels are registered as supported yet. The Python/Rust boundary contract is
+documented in ``docs/development/siderust_boundary.rst``. The future Siderust
+pinning and local override policy is documented in
+``docs/development/siderust_dependency_strategy.rst``.
 
 Upstream Astropy attribution
 ============================

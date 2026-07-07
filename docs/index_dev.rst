@@ -68,6 +68,8 @@ Details
    development/git_resources
    development/scripts
    development/ccython
+   development/siderust_boundary
+   development/siderust_dependency_strategy
    development/maintainers/index
 
 .. Note:: Parts of this guide were adapted from the
