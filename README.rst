@@ -87,6 +87,15 @@ The expected implementation path is incremental:
 7. add facade-level benchmarks using normal Astropy-style code;
 8. document supported accelerated paths and fallbacks.
 
+Kernel boundary contract
+========================
+
+The private Python/Rust boundary contract is documented in
+`docs/siderust/kernel-boundary.rst <docs/siderust/kernel-boundary.rst>`_. The
+contract defines the initial array data model, explicit units, optional-data
+representation, error mapping, and NumPy broadcasting rules that Siderust-backed
+kernels must follow.
+
 Native extension development
 ============================
 
