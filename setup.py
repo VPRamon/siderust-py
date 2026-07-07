@@ -12,19 +12,15 @@ from setuptools.command.editable_wheel import editable_wheel
 from setuptools.command.install import install
 
 from extension_helpers import get_extensions
+from setuptools_rust import Binding, RustExtension
 
-try:
-    from setuptools_rust import Binding, RustExtension
-except ModuleNotFoundError:
-    rust_extensions = []
-else:
-    rust_extensions = [
-        RustExtension(
-            "astropy._siderust._core",
-            "crates/astropy-siderust/Cargo.toml",
-            binding=Binding.PyO3,
-        )
-    ]
+rust_extensions = [
+    RustExtension(
+        "astropy._siderust._core",
+        "crates/astropy-siderust/Cargo.toml",
+        binding=Binding.PyO3,
+    )
+]
 
 ext_modules = get_extensions()
 

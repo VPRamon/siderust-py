@@ -1,17 +1,13 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
-import pytest
-
+import astropy._siderust._core as core
 from astropy._siderust import backend_info, is_available
 
 
-_core = pytest.importorskip("astropy._siderust._core")
-
-
 def test_core_module_importable():
-    assert _core.version() == "0.0.0"
-    assert _core.backend_name() == "siderust-py native extension skeleton"
-    assert _core.is_skeleton() is True
+    assert core.version() == "0.0.0"
+    assert core.backend_name() == "siderust-py native extension skeleton"
+    assert core.is_skeleton() is True
 
 
 def test_backend_info_reports_native_extension():

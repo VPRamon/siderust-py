@@ -96,15 +96,13 @@ built through ``setuptools-rust`` using the PyO3 crate in
 proves that the repository can build, install, import, and call a native module
 from the Astropy package tree.
 
-To build the native skeleton in a local editable checkout, install the normal
-Astropy build requirements, install ``setuptools-rust`` in the active
-environment, and use ``--no-build-isolation`` so ``setup.py`` can see the Rust
-build hook:
+Development builds that include this native skeleton require a Rust toolchain.
+The Python build dependency on ``setuptools-rust`` is declared in
+``pyproject.toml``, so a normal editable install builds the extension:
 
 .. code-block:: bash
 
-    python -m pip install setuptools-rust
-    python -m pip install --no-build-isolation -e .
+    python -m pip install -e .
 
 After installation, the native skeleton can be inspected with:
 
@@ -113,9 +111,9 @@ After installation, the native skeleton can be inspected with:
     python -c "import astropy._siderust._core as core; print(core.version())"
     python -c "from astropy._siderust import backend_info; print(backend_info())"
 
-If ``setuptools-rust`` is not installed, the regular Astropy build path remains
-available and ``import astropy`` should continue to work, but the private
-``astropy._siderust._core`` extension will not be built.
+The top-level ``astropy`` import does not import the private native module
+eagerly. The ``astropy._siderust`` helpers load ``astropy._siderust._core`` only
+when diagnostics are requested.
 
 The skeleton does not yet call the real Siderust library. That dependency and
 the first scientific kernels are intentionally left to later tickets.
