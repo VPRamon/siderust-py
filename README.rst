@@ -15,8 +15,8 @@ Current status
 ==============
 
 This repository is at the planning and integration-bootstrap stage. It is still
-primarily an Astropy fork. Siderust-backed execution paths are not yet part of
-the public runtime behavior unless explicitly introduced by later changes.
+primarily an Astropy fork. A minimal native-extension skeleton now exists under
+``astropy._siderust`` so later issues can add real Siderust-backed kernels.
 
 Compatibility policy
 ====================
@@ -87,6 +87,39 @@ The expected implementation path is incremental:
 7. add facade-level benchmarks using normal Astropy-style code;
 8. document supported accelerated paths and fallbacks.
 
+Native extension development
+============================
+
+The private native skeleton is exposed as ``astropy._siderust._core`` and is
+built through ``setuptools-rust`` using the PyO3 crate in
+``crates/astropy-siderust``. This skeleton is intentionally small: it only
+proves that the repository can build, install, import, and call a native module
+from the Astropy package tree.
+
+To build the native skeleton in a local editable checkout, install the normal
+Astropy build requirements, install ``setuptools-rust`` in the active
+environment, and use ``--no-build-isolation`` so ``setup.py`` can see the Rust
+build hook:
+
+.. code-block:: bash
+
+    python -m pip install setuptools-rust
+    python -m pip install --no-build-isolation -e .
+
+After installation, the native skeleton can be inspected with:
+
+.. code-block:: bash
+
+    python -c "import astropy._siderust._core as core; print(core.version())"
+    python -c "from astropy._siderust import backend_info; print(backend_info())"
+
+If ``setuptools-rust`` is not installed, the regular Astropy build path remains
+available and ``import astropy`` should continue to work, but the private
+``astropy._siderust._core`` extension will not be built.
+
+The skeleton does not yet call the real Siderust library. That dependency and
+the first scientific kernels are intentionally left to later tickets.
+
 Upstream Astropy attribution
 ============================
 
@@ -119,9 +152,8 @@ normal Astropy usage, install upstream Astropy from PyPI:
 
     pip install astropy
 
-For siderust-py development, clone this repository and use the development
-installation workflow described by the project once the native Siderust build
-skeleton is introduced.
+For siderust-py development, clone this repository and use the editable install
+workflow described in `Native extension development`_.
 
 Contributing
 ============
