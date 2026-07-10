@@ -61,7 +61,14 @@ def test_planned_kernel_contracts_have_explicit_units():
         "time.tai_jd_to_tt_jd",
         "coordinates.icrs_to_altaz",
     ]
-    assert PLANNED_KERNELS
+    assert [kernel.name for kernel in PLANNED_KERNELS] == [
+        "time.utc_jd_to_tai_jd",
+        "time.tai_jd_to_tt_jd",
+        "coordinates.icrs_to_altaz",
+        "coordinates.icrs_to_altaz_with_refraction",
+        "coordinates.icrs_to_hadec",
+        "coordinates.altaz_to_icrs",
+    ]
 
     for kernel in PLANNED_KERNELS:
         for value in kernel.inputs + kernel.outputs:

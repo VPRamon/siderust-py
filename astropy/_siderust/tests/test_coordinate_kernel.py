@@ -13,7 +13,7 @@ from astropy.time import Time
 from astropy.utils import iers
 
 
-MAX_CURRENT_DELTA = 30.0
+MAX_CURRENT_DELTA = 20.0
 
 
 def setup_module(module):

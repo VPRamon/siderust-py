@@ -76,3 +76,10 @@ def test_unsupported_time_conversion_uses_existing_path(monkeypatch):
 
     assert result.scale == "tai"
     assert calls == []
+
+
+def test_utc_jd_to_tai_jd_is_blocked_in_native_extension():
+    from astropy._siderust.kernels import utc_jd_to_tai_jd
+
+    with pytest.raises(NotImplementedError, match="time.utc_jd_to_tai_jd is blocked"):
+        utc_jd_to_tai_jd(2451545.0, 0.0)

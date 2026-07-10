@@ -51,6 +51,9 @@ def test_backend_status_reports_mode_and_kernels():
         "time.utc_jd_to_tai_jd",
         "time.tai_jd_to_tt_jd",
         "coordinates.icrs_to_altaz",
+        "coordinates.icrs_to_altaz_with_refraction",
+        "coordinates.icrs_to_hadec",
+        "coordinates.altaz_to_icrs",
     ]
 
 

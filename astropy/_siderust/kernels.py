@@ -33,6 +33,33 @@ def tai_jd_to_tt_jd(jd1, jd2):
     return out1, out2
 
 
+def utc_jd_to_tai_jd(jd1, jd2):
+    """Convert UTC split Julian dates to TAI Julian dates.
+
+    Blocked until Siderust exposes a public UTC/TAI leap-second API.
+    """
+
+    core = _load_core()
+    if core is None:
+        raise RuntimeError("Siderust native extension is not importable")
+
+    jd1_array = np.asarray(jd1, dtype=np.float64)
+    jd2_array = np.asarray(jd2, dtype=np.float64)
+    shape = np.broadcast_shapes(jd1_array.shape, jd2_array.shape)
+    jd1_broadcast = np.broadcast_to(jd1_array, shape)
+    jd2_broadcast = np.broadcast_to(jd2_array, shape)
+
+    out = core.utc_jd_to_tai_jd(
+        jd1_broadcast.ravel().tolist(),
+        jd2_broadcast.ravel().tolist(),
+    )
+    out = np.asarray(out, dtype=np.float64).reshape(shape)
+
+    if shape == ():
+        return out[()]
+    return out
+
+
 def icrs_to_altaz_unit_spherical(
     ra,
     dec,

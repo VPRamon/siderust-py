@@ -70,6 +70,7 @@ Details
    development/ccython
    development/siderust_boundary
    development/siderust_dependency_strategy
+   development/siderust_missing_features
    development/maintainers/index
 
 .. Note:: Parts of this guide were adapted from the

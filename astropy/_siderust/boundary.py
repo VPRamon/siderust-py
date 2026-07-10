@@ -75,6 +75,55 @@ PLANNED_KERNELS = (
         ),
         supported=True,
     ),
+    KernelSpec(
+        name="coordinates.icrs_to_altaz_with_refraction",
+        inputs=(
+            BoundaryValue("ra", "radian"),
+            BoundaryValue("dec", "radian"),
+            BoundaryValue("obstime_tt_jd", "TT Julian date day"),
+            BoundaryValue("longitude", "radian"),
+            BoundaryValue("latitude", "radian"),
+            BoundaryValue("height", "meter", optional=True),
+            BoundaryValue("pressure_hpa", "hectopascal"),
+            BoundaryValue("temperature_c", "celsius", optional=True),
+            BoundaryValue("relative_humidity", "dimensionless", optional=True),
+        ),
+        outputs=(
+            BoundaryValue("az", "radian"),
+            BoundaryValue("alt", "radian"),
+        ),
+    ),
+    KernelSpec(
+        name="coordinates.icrs_to_hadec",
+        inputs=(
+            BoundaryValue("ra", "radian"),
+            BoundaryValue("dec", "radian"),
+            BoundaryValue("obstime_tt_jd", "TT Julian date day"),
+            BoundaryValue("longitude", "radian"),
+            BoundaryValue("latitude", "radian"),
+            BoundaryValue("height", "meter", optional=True),
+        ),
+        outputs=(
+            BoundaryValue("ha", "radian"),
+            BoundaryValue("dec", "radian"),
+        ),
+    ),
+    KernelSpec(
+        name="coordinates.altaz_to_icrs",
+        inputs=(
+            BoundaryValue("az", "radian"),
+            BoundaryValue("alt", "radian"),
+            BoundaryValue("obstime_tt_jd", "TT Julian date day"),
+            BoundaryValue("longitude", "radian"),
+            BoundaryValue("latitude", "radian"),
+            BoundaryValue("height", "meter", optional=True),
+            BoundaryValue("pressure_hpa", "hectopascal", optional=True),
+        ),
+        outputs=(
+            BoundaryValue("ra", "radian"),
+            BoundaryValue("dec", "radian"),
+        ),
+    ),
 )
 
 SUPPORTED_KERNELS = tuple(kernel for kernel in PLANNED_KERNELS if kernel.supported)

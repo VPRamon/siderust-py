@@ -90,6 +90,21 @@ The expected implementation path is incremental:
 7. add facade-level benchmarks using normal Astropy-style code;
 8. document supported accelerated paths and fallbacks.
 
+Missing-feature inventory
+=========================
+
+Each Astropy subpackage has a missing-feature document under
+``docs/siderust/missing/``. See ``docs/siderust/missing/README.md`` for the
+index and status legend. Accelerated paths and known gaps for ``astropy.time``
+and ``astropy.coordinates`` are documented in detail; other subpackages
+describe why they remain on the upstream Astropy implementation path.
+
+Inspect the live backend with:
+
+.. code-block:: bash
+
+    python -m astropy._siderust
+
 Native extension development
 ============================
 
