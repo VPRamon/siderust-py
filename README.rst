@@ -1,131 +1,167 @@
 siderust-py
 ===========
 
-siderust-py is an experimental fork of Astropy intended to keep the familiar
-Astropy Python API while selectively delegating performance-sensitive numerical
-astronomy kernels to Siderust through native Python bindings.
+``siderust-py`` is an experimental Python facade project whose long-term goal is
+to expose a declared Astropy-compatible API while using the Siderust Rust
+ecosystem as the sole scientific implementation for every supported operation.
 
-The project goal is not to rewrite all of Astropy. The goal is to preserve the
-Astropy-facing user experience for APIs such as ``Time``, ``SkyCoord``,
-``EarthLocation``, and ``AltAz``, while making selected internal computation
-paths available through Siderust when they are scientifically validated and
-measurably beneficial.
+The project is not an optional acceleration backend for Astropy. Python owns the
+compatibility layer; Rust owns the scientific semantics.
 
-Current status
-==============
+Project charter
+===============
 
-This repository is at the planning and integration-bootstrap stage. It is still
-primarily an Astropy fork. A minimal native-extension skeleton now exists under
-``astropy._siderust`` so later issues can add real Siderust-backed kernels.
+For an API declared supported, the production execution path is:
+
+1. a user calls an Astropy-compatible Python API;
+2. Python validates facade-level behaviour and marshals array/object structure;
+3. the PyO3/NumPy boundary passes primitive buffers, identifiers, masks, and
+   explicit context metadata into Rust;
+4. a public Siderust-ecosystem API performs the complete scientific operation;
+5. Python reconstructs the compatible result object.
+
+A supported operation must not silently fall back to Astropy, ERFA, Python,
+Cython, or a second scientific implementation in the binding crate. When an API
+is outside the active compatibility profile, it must be reported as unsupported
+and fail explicitly.
+
+The authoritative product program is tracked in
+`GitHub issue #26 <https://github.com/VPRamon/siderust-py/issues/26>`_. The
+dependency-ordered implementation plan is tracked in
+`GitHub issue #253 <https://github.com/VPRamon/siderust-py/issues/253>`_.
+
+Responsibility split
+====================
+
+Python facade responsibilities
+------------------------------
+
+Python may own:
+
+* Astropy-compatible import paths, signatures, constructors, and properties;
+* facade-level argument normalization and object-shape validation;
+* indexing, reshaping, representation, formatting, warnings, and exceptions;
+* NumPy/PyO3 marshaling and reconstruction of Python result objects;
+* explicit capability and compatibility diagnostics.
+
+Python and the binding crate must not own astronomical formulas, physical-unit
+conversion rules, time-scale semantics, coordinate transformations, scientific
+model selection, ephemeris interpretation, atmospheric corrections, or
+per-element scientific loops.
+
+Rust responsibilities
+---------------------
+
+The Siderust Rust ecosystem owns:
+
+* scientific algorithms and numerical models;
+* units, quantities, equivalencies, constants, and their provenance;
+* time representations, scale conversion, leap seconds, and EOP semantics;
+* coordinate representations, frame transformations, Earth orientation,
+  ephemerides, atmospheric effects, and planning calculations;
+* scalar and batch execution;
+* structured scientific errors;
+* scientific-data contexts, validity ranges, and provenance;
+* authoritative Rust tests and benchmarks.
+
+Scientific capabilities must be exposed through public Rust APIs that remain
+useful independently of Python.
 
 Compatibility policy
 ====================
 
-siderust-py should remain compatible with Astropy's public Python API unless a
-compatibility difference is explicitly documented.
+Compatibility claims are bounded by named, versioned profiles. A profile records
+the supported public symbols and their signatures, defaults, result types,
+units, shapes, broadcasting, masks, warnings, exceptions, numerical tolerances,
+models, and required data.
 
-The intended dispatch model is:
+Each API is classified as one of:
 
-* keep Astropy-compatible public objects and call patterns;
-* normalize selected numerical workloads into a low-overhead Python/Rust
-  boundary;
-* execute supported kernels through Siderust when the backend is enabled;
-* fall back to the existing Astropy implementation for unsupported operations;
-* report both numerical agreement and performance impact before enabling a new
-  accelerated path by default.
+``supported``
+    The complete scientific operation is Rust-owned and the facade behaviour is
+    covered by the compatibility and validation suites.
 
-Users should not need to pass Siderust-specific objects into standard Astropy
-APIs. Native kernels should receive simple numerical inputs such as arrays,
-scalars, and explicitly documented units at the internal boundary.
+``experimental``
+    The operation is available for evaluation but is not part of a stable
+    compatibility guarantee. It still must not use a silent production fallback.
 
-Initial acceleration scope
-==========================
+``unsupported``
+    The facade fails explicitly. Unsupported APIs are not delegated to Astropy
+    at runtime.
 
-The first development phase focuses on a narrow set of astronomy-computation
-surfaces where Siderust can plausibly provide value without destabilizing the
-full Astropy package:
+Astropy is a pinned development and conformance oracle. It may be used to
+inventory APIs, generate fixtures, compare behaviour, and run benchmarks in
+test-only environments. It is not the production scientific backend.
 
-* ``astropy.time``: selected time-scale and Julian-date-style conversions;
-* ``astropy.coordinates``: selected high-value coordinate transforms, starting
-  with planning-oriented paths such as ICRS to AltAz if supported by Siderust;
-* scheduling-oriented workflows: batch target/time/location calculations where
-  Python object churn and repeated transformations can dominate runtime;
-* backend diagnostics: tools to determine whether Siderust is available,
-  enabled, and used for a given supported path;
-* correctness and performance evidence: parity tests and benchmarks that report
-  both runtime and numerical deltas.
+Current status
+==============
 
-Initial non-goals
-=================
+This repository is still an Astropy-derived compatibility laboratory. A minimal
+native-extension skeleton exists under ``astropy._siderust`` and historical
+bootstrap work may still contain optional-backend assumptions.
 
-The first iteration does not attempt to accelerate or replace all of Astropy.
-In particular, the following areas are outside the initial Siderust-backed
-scope unless a later ticket explicitly expands the plan:
+That transitional code does not define the target architecture. New work must
+follow the charter above. The copied Astropy tree will be removed from the
+supported product after the standalone facade, tests, documentation, and
+required compatibility behaviour have been extracted.
 
-* FITS I/O;
-* WCS;
-* tables;
-* modeling and fitting;
-* visualization;
-* general file/network I/O;
-* broad replacement of ERFA/pyerfa-backed behavior before scientific parity is
-  demonstrated;
-* claims of universal speedup, especially for scalar or Python-object-heavy
-  workloads.
+The previous optional-backend program is preserved for historical context in
+`GitHub issue #1 <https://github.com/VPRamon/siderust-py/issues/1>`_, which is
+closed and superseded by issue #26.
 
-Development direction
-=====================
+Initial product sequence
+========================
 
-The expected implementation path is incremental:
+The first stable product is a core-astrometry compatibility profile. Work is
+ordered broadly as follows:
 
-1. document the fork identity and compatibility policy;
-2. add a minimal native Siderust extension that can be imported from Python;
-3. define the Python/Rust kernel boundary using arrays and explicit units;
-4. add backend selection and diagnostics;
-5. route one time kernel and one coordinate kernel through Siderust;
-6. add parity tests against the existing Astropy behavior;
-7. add facade-level benchmarks using normal Astropy-style code;
-8. document supported accelerated paths and fallbacks.
+1. freeze the product, compatibility, namespace, and licensing contracts;
+2. extract a standalone facade and make Astropy test-only;
+3. build the reusable NumPy/PyO3 and public Rust API foundations;
+4. deliver units, quantities, constants, ``Time``, and ``TimeDelta``;
+5. deliver coordinate representations, frames, ``EarthLocation``, and
+   ``SkyCoord``;
+6. complete Earth orientation and observed astrometry;
+7. publish reproducible core-astrometry wheels with scientific evidence;
+8. add solar-system ephemerides and observation-planning profiles;
+9. expand into separately scoped domains such as WCS or cosmology.
+
+The ordered milestone gates and their issue dependencies are maintained in
+`the roadmap issue <https://github.com/VPRamon/siderust-py/issues/253>`_.
 
 Kernel boundary contract
 ========================
 
 The private Python/Rust boundary contract is documented in
 `docs/siderust/kernel-boundary.rst <docs/siderust/kernel-boundary.rst>`_. The
-contract defines the initial array data model, explicit units, optional-data
-representation, error mapping, and NumPy broadcasting rules that Siderust-backed
-kernels must follow.
+authoritative ownership and fallback policy is documented in
+`docs/siderust/project-charter.rst <docs/siderust/project-charter.rst>`_.
 
 Native extension development
 ============================
 
-The private native skeleton is exposed as ``astropy._siderust._core`` and is
-built through ``setuptools-rust`` using the PyO3 crate in
-``crates/astropy-siderust``. This skeleton is intentionally small: it only
-proves that the repository can build, install, import, and call a native module
-from the Astropy package tree.
+The current private native skeleton is exposed as ``astropy._siderust._core`` and
+is built through ``setuptools-rust`` using the PyO3 crate in
+``crates/astropy-siderust``. This location is transitional and will be replaced
+by the standalone package architecture.
 
-Development builds that include this native skeleton require a Rust toolchain.
+Development builds that include the native skeleton require a Rust toolchain.
 The Python build dependency on ``setuptools-rust`` is declared in
-``pyproject.toml``, so a normal editable install builds the extension:
+``pyproject.toml``, so an editable install builds the extension:
 
 .. code-block:: bash
 
     python -m pip install -e .
 
-After installation, the native skeleton can be inspected with:
+After installation, the current skeleton can be inspected with:
 
 .. code-block:: bash
 
     python -c "import astropy._siderust._core as core; print(core.version())"
     python -c "from astropy._siderust import backend_info; print(backend_info())"
 
-The top-level ``astropy`` import does not import the private native module
-eagerly. The ``astropy._siderust`` helpers load ``astropy._siderust._core`` only
-when diagnostics are requested.
-
-The skeleton does not yet call the real Siderust library. That dependency and
-the first scientific kernels are intentionally left to later tickets.
+These commands describe the bootstrap implementation, not the final public
+namespace or backend-selection policy.
 
 Upstream Astropy attribution
 ============================
@@ -145,29 +181,41 @@ Useful upstream resources:
 License
 =======
 
-Astropy is licensed under a 3-clause BSD style license. This fork preserves the
-upstream license; see `LICENSE.rst <LICENSE.rst>`_ and the files under
-``licenses/``.
+The repository currently contains Astropy-derived code under Astropy's
+3-clause BSD-style license; see `LICENSE.rst <LICENSE.rst>`_ and the files under
+``licenses/``. The licensing model for the standalone distribution and its
+linked Siderust dependencies is a tracked program decision and must be resolved
+before public binary releases.
 
 Installation
 ============
 
-This fork is not yet presented as a stable public replacement for Astropy. For
-normal Astropy usage, install upstream Astropy from PyPI:
+This repository is not yet a stable public replacement for Astropy. For normal
+Astropy usage, install upstream Astropy from PyPI:
 
 .. code-block:: bash
 
     pip install astropy
 
-For siderust-py development, clone this repository and use the editable install
-workflow described in `Native extension development`_.
+For ``siderust-py`` development, clone this repository and use the editable
+installation workflow described in `Native extension development`_.
 
 Contributing
 ============
 
-Contributions should follow the fork's compatibility policy above and preserve
-upstream Astropy attribution. For Siderust-specific work, prefer small pull
-requests tied to the planning tickets in this repository.
+Contributions must follow the project charter and be linked to the roadmap.
+Scientific formulas, model choices, data interpretation, and batch loops belong
+in the owning Rust repository. Python changes should implement compatibility and
+marshaling around an existing public Rust capability.
+
+Small, reviewable pull requests should identify:
+
+* the compatibility-profile effect;
+* the owning Rust API or upstream issue;
+* scientific references and data dependencies;
+* scalar, array, mask, and broadcasting behaviour;
+* validation and performance evidence;
+* any intentional difference from the pinned Astropy reference.
 
 Security note
 =============
